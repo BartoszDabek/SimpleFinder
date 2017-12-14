@@ -7,12 +7,56 @@
     tools:context="bdabek.com.simplefinder.MainActivity">
 
     <TextView
+        android:id="@+id/msgTxt"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="92dp"
+        android:fontFamily="@font/muli"
+        android:text="Distance From You Current Location"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <SeekBar
+        android:id="@+id/distanceBar"
+        android:layout_width="339dp"
+        android:layout_height="64dp"
+        android:layout_marginTop="8dp"
+        android:maxHeight="80dp"
+        android:minHeight="40dp"
+        android:progress="6"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/distanceTxt" />
+
+    <Button
+        android:id="@+id/findBtn"
+        android:layout_width="251dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/muli"
+        android:text="Find"
+        android:textAppearance="@style/TextAppearance.AppCompat"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/distanceBar"
+        app:layout_constraintVertical_bias="0.246" />
+
+    <TextView
+        android:id="@+id/distanceTxt"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/muli"
+        android:text="km"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/msgTxt" />
 
 </android.support.constraint.ConstraintLayout>
