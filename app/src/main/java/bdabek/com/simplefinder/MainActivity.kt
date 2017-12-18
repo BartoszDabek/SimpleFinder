@@ -1,9 +1,6 @@
 package bdabek.com.simplefinder
 
-import android.annotation.SuppressLint
-import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
@@ -11,19 +8,13 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.SeekBar
 import android.widget.Toast
-import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.*
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
 
-    private var mFusedLocationClient: FusedLocationProviderClient? = null
-    private var mLocationCallback: LocationCallback? = null
-
+    private var location : LocationService? = null
     var distance: Float = STARTING_DISTANCE
-    var longtitude: Double? = null
-    var latitude: Double? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,21 +23,17 @@ class MainActivity : AppCompatActivity() {
         distanceTxt.text = "$distance km"
 
         if (checkPermissions()) {
-            createLocationRequest()
-        }
-        // because user accepted permissions while download from app store
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            createLocationRequest()
+            startLocationUpdates()
         }
 
         findBtn.setOnClickListener {
             if(checkPermissions()) {
-                Log.d("LONGTITUDE: ", "$longtitude")
-                Log.d("LATITUDE: ", "$latitude")
+                Log.d("LONGTITUDE: ", "${location?.longitude}")
+                Log.d("LATITUDE: ", "${location?.latitude}")
+                location?.stopLocationUpdates()
             }
         }
 
-        mLocationCallback = MyLocationCallback()
         addDistanceSeekBarListener()
     }
 
@@ -66,45 +53,25 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    private fun startLocationUpdates() {
+        if(location === null) {
+            location = LocationService(this)
+        }
+        location?.createLocationRequest()
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
             REQUEST_ID_MULTIPLE_PERMISSIONS -> {
                 // grantResults[0] returns permission only for ACCESS_FINE_LOCATION!
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    createLocationRequest()
+                    startLocationUpdates()
+
                 } else {
-                    Toast.makeText(this, "The app will not work without these permissions!", Toast.LENGTH_LONG)
+                    Toast.makeText(this, "App will not work without permissions allowed!", Toast.LENGTH_LONG)
                             .show()
                 }
                 return
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    fun createLocationRequest() {
-        val mLocationRequest = LocationRequest()
-        mLocationRequest.interval = 10000
-        mLocationRequest.fastestInterval = 5000
-        mLocationRequest.priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
-
-        var builder = LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest)
-
-        val client = LocationServices.getSettingsClient(this)
-        val task = client.checkLocationSettings(builder.build())
-
-        task.addOnSuccessListener(this) {
-            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-            mFusedLocationClient?.requestLocationUpdates(mLocationRequest, mLocationCallback, null)
-        }
-
-        task.addOnFailureListener(this) { e ->
-            if (e is ResolvableApiException) {
-                try {
-                    e.startResolutionForResult(this@MainActivity, REQUEST_ID_MULTIPLE_PERMISSIONS)
-                } catch (sendEx: IntentSender.SendIntentException) {
-                }
-
             }
         }
     }
@@ -123,16 +90,6 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
             }
         })
-    }
-
-    inner class MyLocationCallback : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
-            for (location in locationResult.locations) {
-                longtitude = location.longitude
-                latitude = location.latitude
-            }
-        }
-
     }
 
 }
