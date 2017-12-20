@@ -1,20 +1,32 @@
 package bdabek.com.simplefinder
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
+import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
+import android.view.WindowManager
 import android.widget.SeekBar
 import android.widget.Toast
+import bdabek.com.simplefinder.api.RestAPI
+import bdabek.com.simplefinder.commons.LocationService
+import bdabek.com.simplefinder.commons.REQUEST_ID_MULTIPLE_PERMISSIONS
+import bdabek.com.simplefinder.commons.STARTING_DISTANCE
+import bdabek.com.simplefinder.commons.checkPermissions
+import bdabek.com.simplefinder.models.StationList
 import kotlinx.android.synthetic.main.activity_main.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 
 class MainActivity : AppCompatActivity() {
 
-    private var location : LocationService? = null
+    val location: LocationService = LocationService(this)
     var distance: Float = STARTING_DISTANCE
+    lateinit var list: StationList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,42 +34,26 @@ class MainActivity : AppCompatActivity() {
 
         distanceTxt.text = "$distance km"
 
-        if (checkPermissions()) {
+        if (checkPermissions(this)) {
             startLocationUpdates()
         }
 
         findBtn.setOnClickListener {
-            if(checkPermissions()) {
-                Log.d("LONGTITUDE: ", "${location?.longitude}")
-                Log.d("LATITUDE: ", "${location?.latitude}")
-                location?.stopLocationUpdates()
+            if (checkPermissions(this)) {
+                showProgressBar()
+                disableInteractionWithUser()
+                Handler().postDelayed({
+                    getResultsAndSwitchScreen()
+                }, 1000)
             }
         }
 
         addDistanceSeekBarListener()
     }
 
-    private fun checkPermissions(): Boolean {
-        var result: Int
-        val listPermissionsNeeded = ArrayList<String>()
-        for (p in permissions) {
-            result = ContextCompat.checkSelfPermission(this, p)
-            if (result != PackageManager.PERMISSION_GRANTED) {
-                listPermissionsNeeded.add(p)
-            }
-        }
-        if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toTypedArray(), REQUEST_ID_MULTIPLE_PERMISSIONS)
-            return false
-        }
-        return true
-    }
 
     private fun startLocationUpdates() {
-        if(location === null) {
-            location = LocationService(this)
-        }
-        location?.createLocationRequest()
+        location.startLocationRequests()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -76,18 +72,64 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showProgressBar() {
+        progressBar.visibility = View.VISIBLE
+    }
+
+    private fun disableInteractionWithUser() {
+        window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+    }
+
+    private fun getResultsAndSwitchScreen() {
+        val api = RestAPI().getApiService()
+        val call = api.getStations("52.74328,23.58122", (distance * 1000).toInt())
+
+        call.enqueue(object : Callback<StationList> {
+            override fun onResponse(call: Call<StationList>, response: Response<StationList>) {
+                list = response.body()!!
+                location.stopLocationUpdates()
+
+                hideProgressBar()
+                enableInteractionWithUser()
+                switchScreen()
+            }
+
+            override fun onFailure(call: Call<StationList>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "Error occurred! Check your internet connection!", Toast.LENGTH_LONG).show()
+                hideProgressBar()
+                enableInteractionWithUser()
+            }
+        })
+    }
+
+    private fun hideProgressBar() {
+        progressBar.visibility = View.INVISIBLE
+    }
+
+    private fun enableInteractionWithUser() {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+    }
+
+    private fun switchScreen() {
+        val intent = Intent(baseContext, ResultList::class.java)
+        intent.putParcelableArrayListExtra("gas_station_list", ArrayList(list.results))
+
+        startActivity(intent)
+    }
+
     private fun addDistanceSeekBarListener() {
         distanceBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 Log.d("Distance", "${progress.div(2f)}")
                 distanceTxt.text = "${progress.div(2f)} km"
                 distance = progress.div(2f)
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
             }
 
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
             }
         })
     }
