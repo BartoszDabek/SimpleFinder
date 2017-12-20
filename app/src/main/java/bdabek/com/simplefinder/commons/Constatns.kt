@@ -1,4 +1,4 @@
-package bdabek.com.simplefinder
+package bdabek.com.simplefinder.commons
 
 import android.Manifest
 

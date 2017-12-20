@@ -1,4 +1,4 @@
-package bdabek.com.simplefinder
+package bdabek.com.simplefinder.commons
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -23,7 +23,7 @@ class LocationService constructor(private val activity: Activity) {
     }
 
     @SuppressLint("MissingPermission")
-    fun createLocationRequest() {
+    fun startLocationRequests() {
         val mLocationRequest = LocationRequest()
         mLocationRequest.interval = 10000
         mLocationRequest.fastestInterval = 5000
