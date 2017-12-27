@@ -8,15 +8,22 @@ import android.os.Parcelable
  */
 data class GasStation(
         val name: String,
-        val vicinity: String
+        val vicinity: String,
+        val icon: String,
+        val geometry: Geometry
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
             parcel.readString(),
-            parcel.readString())
+            parcel.readString(),
+            parcel.readString(),
+            parcel.readParcelable(Geometry::class.java.classLoader)) {
+    }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(name)
         parcel.writeString(vicinity)
+        parcel.writeString(icon)
+        parcel.writeParcelable(geometry, flags)
     }
 
     override fun describeContents(): Int {
