@@ -10,19 +10,24 @@ data class GasStation(
         val name: String,
         val vicinity: String,
         val icon: String,
+        var distance: String? = null,
+        var distanceInMeters: Int,
         val geometry: Geometry
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
             parcel.readString(),
             parcel.readString(),
             parcel.readString(),
-            parcel.readParcelable(Geometry::class.java.classLoader)) {
-    }
+            parcel.readString(),
+            parcel.readInt(),
+            parcel.readParcelable(Geometry::class.java.classLoader))
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(name)
         parcel.writeString(vicinity)
         parcel.writeString(icon)
+        parcel.writeString(distance)
+        parcel.writeInt(distanceInMeters)
         parcel.writeParcelable(geometry, flags)
     }
 
@@ -39,4 +44,5 @@ data class GasStation(
             return arrayOfNulls(size)
         }
     }
+
 }

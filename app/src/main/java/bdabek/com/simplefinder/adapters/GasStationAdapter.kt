@@ -26,6 +26,7 @@ class GasStationAdapter(private val context : Context, private val stationList: 
 
         holder?.stationName?.text = station.name
         holder?.stationVicinity?.text = station.vicinity
+        holder?.stationDistance?.text = station.distance
         Picasso.with(context)
                 .load(station.icon)
                 .into(holder?.stationIcon)
@@ -48,6 +49,7 @@ class GasStationAdapter(private val context : Context, private val stationList: 
     inner class GasStationViewHolder(itemView: View?) : RecyclerView.ViewHolder(itemView) {
         val stationName = itemView?.tvstation
         val stationVicinity = itemView?.tvvicinity
+        val stationDistance = itemView?.tvdistance
         val stationIcon = itemView?.icon
         val constraintLayout = itemView?.constraintLayout
     }

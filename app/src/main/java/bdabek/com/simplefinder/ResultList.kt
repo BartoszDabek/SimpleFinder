@@ -7,6 +7,7 @@ import android.util.Log
 import bdabek.com.simplefinder.adapters.GasStationAdapter
 import bdabek.com.simplefinder.models.GasStation
 import kotlinx.android.synthetic.main.activity_result_list.*
+import java.util.*
 
 
 class ResultList : AppCompatActivity() {
@@ -16,6 +17,10 @@ class ResultList : AppCompatActivity() {
         setContentView(R.layout.activity_result_list)
 
         val stationList = intent.getParcelableArrayListExtra<GasStation>("gas_station_list")
+
+        Collections.sort(stationList) { lhs, rhs ->
+            lhs.distanceInMeters.compareTo(rhs.distanceInMeters)
+        }
 
         Log.d("2 PARCELABLE LISTA", stationList.toString())
 

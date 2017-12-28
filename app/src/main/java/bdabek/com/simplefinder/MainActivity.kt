@@ -2,8 +2,8 @@ package bdabek.com.simplefinder
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.AsyncTask
 import android.os.Bundle
-import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
@@ -15,6 +15,9 @@ import bdabek.com.simplefinder.commons.LocationService
 import bdabek.com.simplefinder.commons.REQUEST_ID_MULTIPLE_PERMISSIONS
 import bdabek.com.simplefinder.commons.STARTING_DISTANCE
 import bdabek.com.simplefinder.commons.checkPermissions
+import bdabek.com.simplefinder.models.Distance
+import bdabek.com.simplefinder.models.GasStation
+import bdabek.com.simplefinder.models.Rows
 import bdabek.com.simplefinder.models.StationList
 import kotlinx.android.synthetic.main.activity_main.*
 import retrofit2.Call
@@ -26,7 +29,6 @@ class MainActivity : AppCompatActivity() {
 
     val location: LocationService = LocationService(this)
     var distance: Float = STARTING_DISTANCE
-    lateinit var list: StationList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,9 +44,7 @@ class MainActivity : AppCompatActivity() {
             if (checkPermissions(this)) {
                 showProgressBar()
                 disableInteractionWithUser()
-                Handler().postDelayed({
-                    getResultsAndSwitchScreen()
-                }, 1000)
+                getResultsAndSwitchScreen()
             }
         }
 
@@ -87,12 +87,26 @@ class MainActivity : AppCompatActivity() {
 
         call.enqueue(object : Callback<StationList> {
             override fun onResponse(call: Call<StationList>, response: Response<StationList>) {
-                list = response.body()!!
+                val list = response.body()!!
                 location.stopLocationUpdates()
+                // TODO: POZAMIENIAC LOCATION NA CURRENT LOCATION
+                list.results.forEach { item ->
+                    val callDistance = api.getDistance("52.74328,23.58122", "${item.geometry.location.lat},${item.geometry.location.lng}")
+                    val distance = NetworkCall().execute(callDistance)
+                    item.distance = distance.get().text
+                    item.distanceInMeters = distance.get().value
+                }
 
-                hideProgressBar()
-                enableInteractionWithUser()
-                switchScreen()
+                val gasStations = ArrayList(list.results).filter { it.distanceInMeters < distance * 1000 }
+                if(gasStations.isEmpty()) {
+                    Toast.makeText(this@MainActivity, "No results found! Try increase area!", Toast.LENGTH_SHORT).show()
+                    hideProgressBar()
+                    enableInteractionWithUser()
+                } else {
+                    hideProgressBar()
+                    enableInteractionWithUser()
+                    switchScreen(gasStations)
+                }
             }
 
             override fun onFailure(call: Call<StationList>, t: Throwable) {
@@ -103,6 +117,14 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    inner class NetworkCall : AsyncTask<Call<Rows>, Void, Distance>() {
+        override fun doInBackground(vararg params: Call<Rows>?): Distance? {
+            val call = params[0]
+            val rows = call?.execute()
+            return rows?.body()?.rows?.get(0)?.elements?.get(0)?.distance
+        }
+    }
+
     private fun hideProgressBar() {
         progressBar.visibility = View.INVISIBLE
     }
@@ -111,10 +133,9 @@ class MainActivity : AppCompatActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
     }
 
-    private fun switchScreen() {
+    private fun switchScreen(gasStations: List<GasStation>) {
         val intent = Intent(baseContext, ResultList::class.java)
-        intent.putParcelableArrayListExtra("gas_station_list", ArrayList(list.results))
-
+        intent.putParcelableArrayListExtra("gas_station_list", ArrayList(gasStations))
         startActivity(intent)
     }
 
