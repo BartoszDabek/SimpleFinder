@@ -1,9 +1,12 @@
 package bdabek.com.simplefinder
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.AsyncTask
 import android.os.Bundle
+import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
@@ -11,10 +14,7 @@ import android.view.WindowManager
 import android.widget.SeekBar
 import android.widget.Toast
 import bdabek.com.simplefinder.api.RestAPI
-import bdabek.com.simplefinder.commons.LocationService
-import bdabek.com.simplefinder.commons.REQUEST_ID_MULTIPLE_PERMISSIONS
-import bdabek.com.simplefinder.commons.STARTING_DISTANCE
-import bdabek.com.simplefinder.commons.checkPermissions
+import bdabek.com.simplefinder.commons.*
 import bdabek.com.simplefinder.models.Distance
 import bdabek.com.simplefinder.models.GasStation
 import bdabek.com.simplefinder.models.Rows
@@ -30,8 +30,17 @@ class MainActivity : AppCompatActivity() {
     val location: LocationService = LocationService(this)
     var distance: Float = STARTING_DISTANCE
 
+    private val shake: ShakeService = ShakeService(this)
+    private lateinit var prefs : SharedPreferences
+    private var bgTheme : String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        prefs = bgSharedPreferences(this)
+        bgTheme = prefs.getString(BG_THEME, null)
+
+        setBgTheme(this)
         setContentView(R.layout.activity_main)
 
         distanceTxt.text = "$distance km"
@@ -49,6 +58,34 @@ class MainActivity : AppCompatActivity() {
         }
 
         addDistanceSeekBarListener()
+        shake.startShakeListener()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        shake.resumeShakeListener()
+        if (checkPermissions(this)) {
+            startLocationUpdates()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        location.stopLocationUpdates()
+        shake.pauseShakeListener()
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        val bgTheme2 : String? = prefs.getString("bg-theme", null)
+
+        if(bgTheme2 != bgTheme) {
+            setTheme(bgTheme2!!.toInt())
+            Handler().postDelayed({
+                recreate()
+            },0)
+        }
     }
 
 
@@ -59,10 +96,8 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
             REQUEST_ID_MULTIPLE_PERMISSIONS -> {
-                // grantResults[0] returns permission only for ACCESS_FINE_LOCATION!
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startLocationUpdates()
-
                 } else {
                     Toast.makeText(this, "App will not work without permissions allowed!", Toast.LENGTH_LONG)
                             .show()
@@ -83,15 +118,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun getResultsAndSwitchScreen() {
         val api = RestAPI().getApiService()
-        val call = api.getStations("52.74328,23.58122", (distance * 1000).toInt())
+        val call = api.getStations("${location.latitude},${location.longitude}", (distance * 1000).toInt())
 
         call.enqueue(object : Callback<StationList> {
             override fun onResponse(call: Call<StationList>, response: Response<StationList>) {
                 val list = response.body()!!
-                location.stopLocationUpdates()
-                // TODO: POZAMIENIAC LOCATION NA CURRENT LOCATION
+
                 list.results.forEach { item ->
-                    val callDistance = api.getDistance("52.74328,23.58122", "${item.geometry.location.lat},${item.geometry.location.lng}")
+                    val callDistance = api.getDistance("${location.latitude},${location.longitude}",
+                            "${item.geometry.location.lat},${item.geometry.location.lng}")
                     val distance = NetworkCall().execute(callDistance)
                     item.distance = distance.get().text
                     item.distanceInMeters = distance.get().value
