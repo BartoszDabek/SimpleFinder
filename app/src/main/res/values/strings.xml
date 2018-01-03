@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">SimpleFinder</string>
+    <string name="main_distance_description">Distance From You Current Location</string>
+    <string name="main_find">Find</string>
+    <string name="main_distance">km</string>
+    <string name="main_permissions_denied">App will not work without permissions allowed!</string>
+    <string name="main_no_results_found">No results found! Try increase area!</string>
+    <string name="main_error_internet_connection">Error occurred! Check your internet connection!</string>
 </resources>

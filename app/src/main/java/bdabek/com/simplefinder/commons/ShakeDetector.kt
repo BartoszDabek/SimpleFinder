@@ -67,7 +67,7 @@ class ShakeDetector : SensorEventListener {
 	 *  many G's it takes to register a shake
 	 */
         private val SHAKE_THRESHOLD_GRAVITY = 2.7f
-        private val SHAKE_SLOP_TIME_MS = 500
+        private val SHAKE_SLOP_TIME_MS = 1500
         private val SHAKE_COUNT_RESET_TIME_MS = 3000
     }
 }

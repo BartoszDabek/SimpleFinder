@@ -12,9 +12,6 @@ import bdabek.com.simplefinder.models.GasStation
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.gas_station.view.*
 
-/**
- * Created by Bartek on 2017-12-27.
- */
 class GasStationAdapter(private val context : Context, private val stationList: List<GasStation>) : RecyclerView.Adapter<GasStationAdapter.GasStationViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): GasStationViewHolder {

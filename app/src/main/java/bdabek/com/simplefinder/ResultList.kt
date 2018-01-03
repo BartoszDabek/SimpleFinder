@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import bdabek.com.simplefinder.adapters.GasStationAdapter
+import bdabek.com.simplefinder.commons.STATION_LIST_NAME
 import bdabek.com.simplefinder.commons.ShakeService
 import bdabek.com.simplefinder.commons.setBgTheme
 import bdabek.com.simplefinder.models.GasStation
@@ -20,7 +21,7 @@ class ResultList : AppCompatActivity() {
         setBgTheme(this)
         setContentView(R.layout.activity_result_list)
 
-        val stationList = intent.getParcelableArrayListExtra<GasStation>("gas_station_list")
+        val stationList = intent.getParcelableArrayListExtra<GasStation>(STATION_LIST_NAME)
         Collections.sort(stationList) { lhs, rhs ->
             lhs.distanceInMeters.compareTo(rhs.distanceInMeters)
         }

@@ -3,9 +3,7 @@ package bdabek.com.simplefinder.api
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
-/**
- * Created by Bartek on 2017-12-19.
- */
+
 class RestAPI {
 
     private val ROOT_URL: String = "https://maps.googleapis.com/"

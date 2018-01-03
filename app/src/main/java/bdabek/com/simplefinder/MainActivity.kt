@@ -1,6 +1,5 @@
 package bdabek.com.simplefinder
 
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -43,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         setBgTheme(this)
         setContentView(R.layout.activity_main)
 
-        distanceTxt.text = "$distance km"
+        kmTxt.text = distance.toString()
 
         if (checkPermissions(this)) {
             startLocationUpdates()
@@ -78,7 +77,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        val bgTheme2 : String? = prefs.getString("bg-theme", null)
+        val bgTheme2 : String? = prefs.getString(BG_THEME, null)
 
         if(bgTheme2 != bgTheme) {
             setTheme(bgTheme2!!.toInt())
@@ -99,7 +98,7 @@ class MainActivity : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startLocationUpdates()
                 } else {
-                    Toast.makeText(this, "App will not work without permissions allowed!", Toast.LENGTH_LONG)
+                    Toast.makeText(this, getString(R.string.main_permissions_denied), Toast.LENGTH_LONG)
                             .show()
                 }
                 return
@@ -134,7 +133,7 @@ class MainActivity : AppCompatActivity() {
 
                 val gasStations = ArrayList(list.results).filter { it.distanceInMeters < distance * 1000 }
                 if(gasStations.isEmpty()) {
-                    Toast.makeText(this@MainActivity, "No results found! Try increase area!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, getString(R.string.main_no_results_found), Toast.LENGTH_SHORT).show()
                     hideProgressBar()
                     enableInteractionWithUser()
                 } else {
@@ -145,7 +144,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onFailure(call: Call<StationList>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "Error occurred! Check your internet connection!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, getString(R.string.main_error_internet_connection), Toast.LENGTH_LONG).show()
                 hideProgressBar()
                 enableInteractionWithUser()
             }
@@ -170,16 +169,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun switchScreen(gasStations: List<GasStation>) {
         val intent = Intent(baseContext, ResultList::class.java)
-        intent.putParcelableArrayListExtra("gas_station_list", ArrayList(gasStations))
+        intent.putParcelableArrayListExtra(STATION_LIST_NAME, ArrayList(gasStations))
         startActivity(intent)
     }
 
     private fun addDistanceSeekBarListener() {
         distanceBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                Log.d("Distance", "${progress.div(2f)}")
-                distanceTxt.text = "${progress.div(2f)} km"
-                distance = progress.div(2f)
+                Log.d("Distance", "${(progress / 2f)}")
+                kmTxt.text = (progress / 2f).toString()
+                distance = progress / 2f
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {
