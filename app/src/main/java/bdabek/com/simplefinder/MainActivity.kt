@@ -14,9 +14,7 @@ import android.widget.SeekBar
 import android.widget.Toast
 import bdabek.com.simplefinder.api.RestAPI
 import bdabek.com.simplefinder.commons.*
-import bdabek.com.simplefinder.models.Distance
 import bdabek.com.simplefinder.models.GasStation
-import bdabek.com.simplefinder.models.Rows
 import bdabek.com.simplefinder.models.StationList
 import kotlinx.android.synthetic.main.activity_main.*
 import retrofit2.Call
@@ -30,8 +28,8 @@ class MainActivity : AppCompatActivity() {
     var distance: Float = STARTING_DISTANCE
 
     private val shake: ShakeService = ShakeService(this)
-    private lateinit var prefs : SharedPreferences
-    private var bgTheme : String? = null
+    private lateinit var prefs: SharedPreferences
+    private var bgTheme: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,19 +75,14 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        val bgTheme2 : String? = prefs.getString(BG_THEME, null)
+        val bgTheme2: String? = prefs.getString(BG_THEME, null)
 
-        if(bgTheme2 != bgTheme) {
+        if (bgTheme2 != bgTheme) {
             setTheme(bgTheme2!!.toInt())
             Handler().postDelayed({
                 recreate()
-            },0)
+            }, 0)
         }
-    }
-
-
-    private fun startLocationUpdates() {
-        location.startLocationRequests()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -104,6 +97,10 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
+    }
+
+    private fun startLocationUpdates() {
+        location.startLocationRequests()
     }
 
     private fun showProgressBar() {
@@ -121,26 +118,7 @@ class MainActivity : AppCompatActivity() {
 
         call.enqueue(object : Callback<StationList> {
             override fun onResponse(call: Call<StationList>, response: Response<StationList>) {
-                val list = response.body()!!
-
-                list.results.forEach { item ->
-                    val callDistance = api.getDistance("${location.latitude},${location.longitude}",
-                            "${item.geometry.location.lat},${item.geometry.location.lng}")
-                    val distance = NetworkCall().execute(callDistance)
-                    item.distance = distance.get().text
-                    item.distanceInMeters = distance.get().value
-                }
-
-                val gasStations = ArrayList(list.results).filter { it.distanceInMeters < distance * 1000 }
-                if(gasStations.isEmpty()) {
-                    Toast.makeText(this@MainActivity, getString(R.string.main_no_results_found), Toast.LENGTH_SHORT).show()
-                    hideProgressBar()
-                    enableInteractionWithUser()
-                } else {
-                    hideProgressBar()
-                    enableInteractionWithUser()
-                    switchScreen(gasStations)
-                }
+                NetworkCall().execute(response.body()?.results)
             }
 
             override fun onFailure(call: Call<StationList>, t: Throwable) {
@@ -151,11 +129,35 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    inner class NetworkCall : AsyncTask<Call<Rows>, Void, Distance>() {
-        override fun doInBackground(vararg params: Call<Rows>?): Distance? {
-            val call = params[0]
-            val rows = call?.execute()
-            return rows?.body()?.rows?.get(0)?.elements?.get(0)?.distance
+    inner class NetworkCall : AsyncTask<List<GasStation>, Void, Unit>() {
+        private var gasStationList: ArrayList<GasStation> = ArrayList()
+        override fun doInBackground(vararg params: List<GasStation>) {
+            val api = RestAPI().getApiService()
+            val stationList = params[0]
+            stationList.forEach { item ->
+                val stationDistance = api.getDistance("${location.latitude},${location.longitude}",
+                        "${item.geometry.location.lat},${item.geometry.location.lng}")
+                        .execute()
+                val distance = stationDistance.body()?.rows?.get(0)?.elements?.get(0)?.distance
+                item.distance = distance?.text
+                item.distanceInMeters = distance!!.value
+                gasStationList.add(item)
+            }
+        }
+
+        override fun onPostExecute(result: Unit?) {
+            super.onPostExecute(result)
+
+            val gasStations = gasStationList.filter { it.distanceInMeters < distance * 1000 }
+            if (gasStations.isEmpty()) {
+                Toast.makeText(this@MainActivity, getString(R.string.main_no_results_found), Toast.LENGTH_SHORT).show()
+                hideProgressBar()
+                enableInteractionWithUser()
+            } else {
+                hideProgressBar()
+                enableInteractionWithUser()
+                switchScreen(gasStations)
+            }
         }
     }
 
